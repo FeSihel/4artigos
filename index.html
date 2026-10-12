@@ -51,7 +51,7 @@
                     type="text" 
                     id="search-input" 
                     required 
-                    placeholder="Ex: Impacto da inteligência artificial na educação" 
+                    placeholder="Ex: Impacto da inteligência artificial na educação?" 
                     class="w-full pl-11 pr-4 py-3.5 bg-white border border-zinc-300 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition text-sm shadow-sm"
                 >
             </div>
@@ -140,7 +140,9 @@
             renderSkeletons();
 
             try {
-                const url = `https://api.openalex.org/works?search=${encodeURIComponent(term)}&per-page=4&filter=is_paratext:false`;
+                // Remove caracteres especiais (?, #, /) que causam erro 400 na API OpenAlex
+                const cleanTerm = term.replace(/[?#\/]/g, '').trim();
+                const url = `https://api.openalex.org/works?search=${encodeURIComponent(cleanTerm)}&per-page=4&filter=is_paratext:false`;
                 const response = await fetch(url);
                 
                 if (!response.ok) {
@@ -165,7 +167,7 @@
 
                 if (works.length < 4) {
                     statusMessage.className = 'mt-6 p-4 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-sm';
-                    statusMessage.innerHTML = `<strong>Nota:</strong> Só achei ${works.length} artigo(s) real(is) para este tema. Regra anti-alucinação aplicada.`;
+                    statusMessage.innerHTML = `<strong>Nota:</strong> Só achei ${works.length} artigo(s) real(is) para este tema. Regra anti-alucinação applied.`;
                     statusMessage.classList.remove('hidden');
                 } else {
                     statusMessage.classList.add('hidden');
@@ -179,7 +181,6 @@
                     let authorsStr = 'Sem autor declarado';
                     let abntReferenceHeader = '';
 
-                    // Trata autoria checando display_name e name na OpenAlex
                     const rawAuthorName = work.authorships?.[0]?.author?.display_name || work.authorships?.[0]?.author?.name || '';
                     const cleanAuthorName = rawAuthorName.trim();
 
@@ -187,7 +188,6 @@
                         const isMultiple = work.authorships.length > 1;
                         authorsStr = isMultiple ? `${cleanAuthorName} et al.` : cleanAuthorName;
 
-                        // Formatação ABNT: SOBRENOME, Nome et al.
                         const parts = cleanAuthorName.split(' ');
                         if (parts.length > 1) {
                             const lastName = parts[parts.length - 1].toUpperCase();
@@ -199,7 +199,6 @@
                             abntReferenceHeader = `${abntAuthor}. ${title}.`;
                         }
                     } else {
-                        // Regra ABNT NBR 6023 para obras sem autor: Primeira palavra do título em CAIXA ALTA
                         const titleParts = title.trim().split(' ');
                         const firstWordUpper = titleParts[0].toUpperCase();
                         const restOfTitle = titleParts.slice(1).join(' ');
@@ -221,7 +220,6 @@
                         linkText = 'Acessar DOI';
                     }
 
-                    // Citação ABNT Completa
                     const abntRef = `${abntReferenceHeader} ${sourceName}, ${year}. Disponível em: <${articleUrl}>.`;
 
                     cardsHtml += `
