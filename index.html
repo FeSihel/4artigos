@@ -79,7 +79,7 @@
         </div>
     </main>
 
-    <footer class="w-full border-t border-zinc-100 py-6 text-center text-xs text-zinc-500">
+    <footer class="w-full border-t border-zinc-100 py-6 text-center text-xs text-zinc-500 space-y-1">
         <p>Desenvolvido por <strong>Felipe Sihel Lipszyc</strong> | OpenAlex + Crossref | 100% sem alucinação</p>
         <p class="text-zinc-400">As referências são geradas com base em dados abertos; a validação final da norma ABNT cabe ao pesquisador.</p>
     </footer>
@@ -168,7 +168,7 @@
 
                 if (works.length < 4) {
                     statusMessage.className = 'mt-6 p-4 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-sm';
-                    statusMessage.innerHTML = `<strong>Nota:</strong> Só achei ${works.length} artigo(s) real(is) para este tema. Regra anti-alucinação applied.`;
+                    statusMessage.innerHTML = `<strong>Nota:</strong> Só achei ${works.length} artigo(s) real(is) para este tema. Regra anti-alucinação aplicada.`;
                     statusMessage.classList.remove('hidden');
                 } else {
                     statusMessage.classList.add('hidden');
@@ -180,10 +180,10 @@
                     const year = work.publication_year || 's.d.';
                     
                     let authorsStr = 'Sem autor declarado';
-                    let abntReferenceHeader = '';
+                    let abntAuthorPart = '';
 
                     const rawAuthorName = work.authorships?.[0]?.author?.display_name || work.authorships?.[0]?.author?.name || '';
-                    const cleanAuthorName = rawAuthorName.trim();
+                    const cleanAuthorName = rawAuthorName.replace(/\.+$/, '').trim();
 
                     if (cleanAuthorName && cleanAuthorName.toLowerCase() !== 'undefined' && cleanAuthorName.toLowerCase() !== 'null') {
                         const isMultiple = work.authorships.length > 1;
@@ -193,11 +193,9 @@
                         if (parts.length > 1) {
                             const lastName = parts[parts.length - 1].toUpperCase();
                             const restNames = parts.slice(0, parts.length - 1).join(' ');
-                            const abntAuthor = isMultiple ? `${lastName}, ${restNames}, et al.` : `${lastName}, ${restNames}`;
-                            abntReferenceHeader = `${abntAuthor}. ${title}.`;
+                            abntAuthorPart = isMultiple ? `${lastName}, ${restNames} et al.` : `${lastName}, ${restNames}.`;
                         } else {
-                            const abntAuthor = isMultiple ? `${cleanAuthorName.toUpperCase()}, et al.` : cleanAuthorName.toUpperCase();
-                            abntReferenceHeader = `${abntAuthor}. ${title}.`;
+                            abntAuthorPart = isMultiple ? `${cleanAuthorName.toUpperCase()} et al.` : `${cleanAuthorName.toUpperCase()}.`;
                         }
                     } else {
                         const titleParts = title.trim().split(' ');
@@ -206,12 +204,12 @@
                         const formattedTitle = restOfTitle ? `${firstWordUpper} ${restOfTitle}` : firstWordUpper;
                         
                         authorsStr = 'Sem autor declarado';
-                        abntReferenceHeader = `${formattedTitle}.`;
+                        abntAuthorPart = `${formattedTitle}.`;
                     }
 
                     let sourceName = 'Fonte acadêmica OpenAlex';
                     if (work.primary_location && work.primary_location.source && work.primary_location.source.display_name) {
-                        sourceName = work.primary_location.source.display_name;
+                        sourceName = work.primary_location.source.display_name.replace(/\.+$/, '').trim();
                     }
 
                     let articleUrl = work.id;
@@ -221,7 +219,10 @@
                         linkText = 'Acessar DOI';
                     }
 
-                    const abntRef = `${abntReferenceHeader} ${sourceName}, ${year}. Disponível em: <${articleUrl}>.`;
+                    // Montagem limpa sem duplicação de pontos
+                    const abntRef = (cleanAuthorName && cleanAuthorName.toLowerCase() !== 'undefined' && cleanAuthorName.toLowerCase() !== 'null')
+                        ? `${abntAuthorPart} ${title}. ${sourceName}, ${year}. Disponível em: <${articleUrl}>.`
+                        : `${abntAuthorPart} ${sourceName}, ${year}. Disponível em: <${articleUrl}>.`;
 
                     cardsHtml += `
                         <div class="border border-zinc-200 rounded-2xl p-6 bg-white shadow-sm hover:shadow-md transition flex flex-col justify-between">
@@ -261,7 +262,7 @@
                                     class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-lg text-xs font-medium text-zinc-700 transition active:scale-95 cursor-pointer"
                                 >
                                     <svg class="w-3.5 h-3.5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 012-2h2a2 2 0 012 2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
                                     </svg>
                                     Copiar referência ABNT
                                 </button>
