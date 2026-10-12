@@ -13,7 +13,7 @@ O **4Artigos** resolve isso fazendo buscas diretas e determinísticas em bases d
 - **Recursos:** Links diretos para DOI/OpenAlex e botão de copiar citação formatada.
 
 ## ⚡ Como Usar
-Apenas acesar <a href="#">4artigos</a> e escolher um tema de pesquisa.
+Apenas acesar <a href="4artigos.vercel.app">4artigos</a> e escolher um tema de pesquisa.
 
 ## 📄 Licença
 Distribuído sob a licença MIT. Criado por **Felipe Sihel Lipszyc**.
