@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4Artigos - Buscador de Artigos Acadêmicos Reais</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="h-full bg-white text-zinc-900 font-sans antialiased selection:bg-zinc-900 selection:text-white flex flex-col justify-between">
+
+    <header class="w-full max-w-4xl mx-auto px-6 pt-16 pb-8 text-center sm:text-left">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-800 border border-zinc-200 mb-4">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    API Aberta &amp; Sem Alucinação
+                </span>
+                <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-900">4Artigos</h1>
+                <p class="mt-2 text-base text-zinc-600 max-w-xl">
+                    Digite o tema do seu TCC. Te devolvemos até 4 artigos acadêmicos reais. Sem invenção.
+                </p>
+            </div>
+        </div>
+    </header>
+
+    <main class="w-full max-w-4xl mx-auto px-6 flex-grow pb-16">
+        <form id="search-form" class="mt-4 flex flex-col sm:flex-row gap-3">
+            <div class="relative flex-grow">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-zinc-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+                <input 
+                    type="text" 
+                    id="search-input" 
+                    required 
+                    placeholder="Ex: Impacto da inteligência artificial na educação" 
+                    class="w-full pl-11 pr-4 py-3.5 bg-white border border-zinc-300 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition text-sm shadow-sm"
+                >
+            </div>
+            <button 
+                type="submit" 
+                id="search-btn"
+                class="inline-flex items-center justify-center px-6 py-3.5 bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-950 text-white font-medium rounded-xl text-sm transition shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            >
+                Achar 4 artigos
+            </button>
+        </form>
+
+        <!-- Status / Feedback Banner -->
+        <div id="status-message" class="mt-6 hidden"></div>
+
+        <div id="results-container" class="mt-8 grid grid-cols-1 gap-4">
+            <!-- Initial empty state -->
+            <div class="border border-dashed border-zinc-200 rounded-2xl p-12 text-center text-zinc-500">
+                <svg class="w-10 h-10 mx-auto text-zinc-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                </svg>
+                <p class="text-sm font-medium text-zinc-700">Nenhuma busca realizada ainda</p>
+                <p class="text-xs text-zinc-400 mt-1">Insira um tema acima para buscar artigos revisados por pares via OpenAlex.</p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="w-full border-t border-zinc-100 py-6 text-center text-xs text-zinc-500">
+        <p>Desenvolvido por <strong>Felipe Sihel Lipszyc</strong> | OpenAlex + Crossref | 100% sem alucinação</p>
+    </footer>
+
+    <script>
+        const form = document.getElementById('search-form');
+        const searchInput = document.getElementById('search-input');
+        const searchBtn = document.getElementById('search-btn');
+        const resultsContainer = document.getElementById('results-container');
+        const statusMessage = document.getElementById('status-message');
+
+        function showNotification(message, type = 'info') {
+            const existing = document.getElementById('toast-notification');
+            if (existing) existing.remove();
+
+            const toast = document.createElement('div');
+            toast.id = 'toast-notification';
+            toast.className = `fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl text-xs font-medium shadow-lg transition-all duration-300 flex items-center gap-2 ${
+                type === 'error' ? 'bg-red-900 text-white' : 'bg-zinc-900 text-white'
+            }`;
+            toast.innerHTML = `<span>${message}</span>`;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function renderSkeletons() {
+            let html = '';
+            for (let i = 0; i < 4; i++) {
+                html += `
+                    <div class="border border-zinc-200 rounded-2xl p-6 bg-white shadow-sm animate-pulse">
+                        <div class="h-4 bg-zinc-200 rounded w-3/4 mb-3"></div>
+                        <div class="h-3 bg-zinc-100 rounded w-1/2 mb-4"></div>
+                        <div class="space-y-2 mb-6">
+                            <div class="h-3 bg-zinc-100 rounded w-full"></div>
+                            <div class="h-3 bg-zinc-100 rounded w-5/6"></div>
+                        </div>
+                        <div class="flex justify-between items-center pt-4 border-t border-zinc-100">
+                            <div class="h-3 bg-zinc-100 rounded w-1/4"></div>
+                            <div class="h-8 bg-zinc-100 rounded w-32"></div>
+                        </div>
+                    </div>
+                `;
+            }
+            resultsContainer.innerHTML = html;
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const term = searchInput.value.trim();
+            if (!term) return;
+
+            searchBtn.disabled = true;
+            searchBtn.textContent = 'Buscando...';
+            statusMessage.classList.add('hidden');
+            renderSkeletons();
+
+            try {
+                const url = `https://api.openalex.org/works?search=${encodeURIComponent(term)}&per-page=4&filter=is_paratext:false`;
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`Erro na API: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const works = data.results || [];
+
+                if (works.length === 0) {
+                    statusMessage.className = 'mt-6 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm';
+                    statusMessage.innerHTML = `<strong>Atenção:</strong> Nenhum artigo encontrado para "${term}". Tente refinar sua busca com outros termos acadêmicos.`;
+                    statusMessage.classList.remove('hidden');
+                    resultsContainer.innerHTML = `
+                        <div class="border border-dashed border-zinc-200 rounded-2xl p-12 text-center text-zinc-500">
+                            <p class="text-sm font-medium text-zinc-700">Nenhum resultado retornado</p>
+                            <p class="text-xs text-zinc-400 mt-1">A OpenAlex não retornou obras para esta consulta exata.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                if (works.length < 4) {
+                    statusMessage.className = 'mt-6 p-4 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-sm';
+                    statusMessage.innerHTML = `<strong>Nota:</strong> Só achei ${works.length} artigo(s) real(is) para este tema. Regra anti-alucinação aplicada.`;
+                    statusMessage.classList.remove('hidden');
+                } else {
+                    statusMessage.classList.add('hidden');
+                }
+
+                let cardsHtml = '';
+                works.forEach((work, index) => {
+                    const title = work.title || 'Título não disponível';
+                    const year = work.publication_year || 's.d.';
+                    
+                    let authorsStr = 'Sem autor declarado';
+                    let abntReferenceHeader = '';
+
+                    // Trata autoria checando display_name e name na OpenAlex
+                    const rawAuthorName = work.authorships?.[0]?.author?.display_name || work.authorships?.[0]?.author?.name || '';
+                    const cleanAuthorName = rawAuthorName.trim();
+
+                    if (cleanAuthorName && cleanAuthorName.toLowerCase() !== 'undefined' && cleanAuthorName.toLowerCase() !== 'null') {
+                        const isMultiple = work.authorships.length > 1;
+                        authorsStr = isMultiple ? `${cleanAuthorName} et al.` : cleanAuthorName;
+
+                        // Formatação ABNT: SOBRENOME, Nome et al.
+                        const parts = cleanAuthorName.split(' ');
+                        if (parts.length > 1) {
+                            const lastName = parts[parts.length - 1].toUpperCase();
+                            const restNames = parts.slice(0, parts.length - 1).join(' ');
+                            const abntAuthor = isMultiple ? `${lastName}, ${restNames}, et al.` : `${lastName}, ${restNames}`;
+                            abntReferenceHeader = `${abntAuthor}. ${title}.`;
+                        } else {
+                            const abntAuthor = isMultiple ? `${cleanAuthorName.toUpperCase()}, et al.` : cleanAuthorName.toUpperCase();
+                            abntReferenceHeader = `${abntAuthor}. ${title}.`;
+                        }
+                    } else {
+                        // Regra ABNT NBR 6023 para obras sem autor: Primeira palavra do título em CAIXA ALTA
+                        const titleParts = title.trim().split(' ');
+                        const firstWordUpper = titleParts[0].toUpperCase();
+                        const restOfTitle = titleParts.slice(1).join(' ');
+                        const formattedTitle = restOfTitle ? `${firstWordUpper} ${restOfTitle}` : firstWordUpper;
+                        
+                        authorsStr = 'Sem autor declarado';
+                        abntReferenceHeader = `${formattedTitle}.`;
+                    }
+
+                    let sourceName = 'Fonte acadêmica OpenAlex';
+                    if (work.primary_location && work.primary_location.source && work.primary_location.source.display_name) {
+                        sourceName = work.primary_location.source.display_name;
+                    }
+
+                    let articleUrl = work.id;
+                    let linkText = 'Ver no OpenAlex';
+                    if (work.doi) {
+                        articleUrl = work.doi.startsWith('http') ? work.doi : `https://doi.org/${work.doi}`;
+                        linkText = 'Acessar DOI';
+                    }
+
+                    // Citação ABNT Completa
+                    const abntRef = `${abntReferenceHeader} ${sourceName}, ${year}. Disponível em: <${articleUrl}>.`;
+
+                    cardsHtml += `
+                        <div class="border border-zinc-200 rounded-2xl p-6 bg-white shadow-sm hover:shadow-md transition flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between gap-2 mb-2">
+                                    <span class="text-xs font-semibold uppercase tracking-wider text-zinc-500 bg-zinc-100 px-2.5 py-1 rounded-md">
+                                        Artigo #${index + 1} • ${year}
+                                    </span>
+                                    <span class="text-xs text-zinc-500 truncate max-w-[200px] sm:max-w-xs" title="${sourceName}">
+                                        ${sourceName}
+                                    </span>
+                                </div>
+                                <h3 class="text-base font-semibold text-zinc-900 leading-snug mb-2">
+                                    <a href="${articleUrl}" target="_blank" rel="noopener noreferrer" class="hover:underline hover:text-blue-600 transition">
+                                        ${title}
+                                    </a>
+                                </h3>
+                                <p class="text-xs text-zinc-600 mb-4">
+                                    <span class="font-medium text-zinc-700">Autores:</span> ${authorsStr}
+                                </p>
+                            </div>
+                            <div class="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-zinc-100 mt-2">
+                                <a 
+                                    href="${articleUrl}" 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    class="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-900 hover:text-blue-600 transition"
+                                >
+                                    ${linkText}
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                    </svg>
+                                </a>
+                                <button 
+                                    onclick="copyAbntReference(this)" 
+                                    data-ref="${encodeURIComponent(abntRef)}"
+                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-lg text-xs font-medium text-zinc-700 transition active:scale-95 cursor-pointer"
+                                >
+                                    <svg class="w-3.5 h-3.5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 012-2h2a2 2 0 012 2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                                    </svg>
+                                    Copiar referência ABNT
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                resultsContainer.innerHTML = cardsHtml;
+
+            } catch (err) {
+                console.error(err);
+                statusMessage.className = 'mt-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm';
+                statusMessage.innerHTML = `<strong>Erro honesto na API:</strong> Não foi possível conectar aos servidores abertos no momento (${err.message}). Verifique sua conexão e tente novamente.`;
+                statusMessage.classList.remove('hidden');
+                resultsContainer.innerHTML = `
+                    <div class="border border-dashed border-red-200 rounded-2xl p-12 text-center text-red-500">
+                        <p class="text-sm font-medium">Falha na requisição</p>
+                        <p class="text-xs text-red-400 mt-1">Nenhum dado foi inventado. Ocorreu um erro de comunicação.</p>
+                    </div>
+                `;
+            } finally {
+                searchBtn.disabled = false;
+                searchBtn.textContent = 'Achar 4 artigos';
+            }
+        });
+
+        function copyAbntReference(button) {
+            const ref = decodeURIComponent(button.getAttribute('data-ref'));
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(ref).then(() => {
+                    showFeedback(button);
+                }).catch(() => {
+                    fallbackCopy(ref, button);
+                });
+            } else {
+                fallbackCopy(ref, button);
+            }
+        }
+
+        function fallbackCopy(text, button) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showFeedback(button);
+                } else {
+                    showNotification('Erro ao copiar referência.', 'error');
+                }
+            } catch (err) {
+                showNotification('Erro ao copiar referência.', 'error');
+            }
+            document.body.removeChild(textarea);
+        }
+
+        function showFeedback(button) {
+            const originalText = button.innerHTML;
+            button.innerHTML = `
+                <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span class="text-emerald-700 font-semibold">Copiado!</span>
+            `;
+            showNotification('Referência ABNT copiada com sucesso!');
+            setTimeout(() => {
+                button.innerHTML = originalText;
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
